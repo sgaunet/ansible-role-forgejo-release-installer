@@ -1,0 +1,103 @@
+---
+
+- name: Set forgejo_role_installer_version if latest
+  ansible.builtin.set_fact:
+    version_to_install: "{{ project_info.json.tag_name | replace('v', '') }}"
+    cacheable: true
+  changed_when: false
+  check_mode: false
+  when:
+    - forgejo_role_installer_version == "latest"
+
+- name: Set forgejo_role_installer_version not latest
+  ansible.builtin.set_fact:
+    version_to_install: "{{ forgejo_role_installer_version }}"
+    cacheable: true
+  changed_when: false
+  check_mode: false
+  when:
+    - forgejo_role_installer_version != "latest"
+
+- name: Get version of the binary actually installed ({{ forgejo_role_installer_repository }})
+  become: false
+  ansible.builtin.shell: "{{ forgejo_role_installer_cmd_to_get_version }}"
+  args:
+    executable: /bin/bash
+  register: forgejo_role_installer_version_client_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Install the binary ({{ forgejo_role_installer_repository }})
+  when:
+    - not ansible_check_mode
+    - forgejo_role_installer_version_client_installed.stdout != version_to_install
+  block:
+    - name: Create a temporary directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/"
+        state: directory
+        mode: '0755'
+
+    - name: Ensure the binary destination directory exists
+      ansible.builtin.file:
+        path: "{{ forgejo_role_installer_binary_path | dirname }}"
+        state: directory
+        mode: '0755'
+      become: "{{ forgejo_role_installer_become }}"
+
+    - name: Download the release ({{ forgejo_role_installer_repository }})
+      ansible.builtin.get_url:
+        url: "{{ forgejo_role_installer_release }}"
+        dest: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/"
+        mode: '0755'
+
+    - name: Get basename from URL
+      ansible.builtin.set_fact:
+        filename: "{{ forgejo_role_installer_release | urlsplit('path') | basename }}"
+
+    - name: Decompress the archive
+      ansible.builtin.unarchive:
+        src: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/{{ filename }}"
+        dest: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/"
+        remote_src: true
+      when:
+        - forgejo_role_installer_release_is_archive
+
+    - name: Find and install the binary {{ forgejo_role_installer_binary_name }}
+      ansible.builtin.find:
+        paths: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/"
+        patterns: "{{ forgejo_role_installer_binary_name }}"
+        recurse: true
+      register: forgejo_role_installer_binary
+      when:
+        - forgejo_role_installer_release_is_archive
+
+    - name: Install the binary {{ forgejo_role_installer_binary_name }}
+      ansible.builtin.copy:
+        src: "{{ forgejo_role_installer_binary.files[0].path }}"
+        dest: "{{ forgejo_role_installer_binary_path }}"
+        owner: "{{ forgejo_role_installer_owner | default(omit) }}"
+        group: "{{ forgejo_role_installer_group | default(omit) }}"
+        mode: "0755"
+        remote_src: true
+      become: "{{ forgejo_role_installer_become }}"
+      when:
+        - forgejo_role_installer_release_is_archive
+
+    - name: Install the binary {{ forgejo_role_installer_binary_name }}
+      ansible.builtin.copy:
+        src: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}/{{ filename }}"
+        dest: "{{ forgejo_role_installer_binary_path }}"
+        owner: "{{ forgejo_role_installer_owner | default(omit) }}"
+        group: "{{ forgejo_role_installer_group | default(omit) }}"
+        mode: "0755"
+        remote_src: true
+      become: "{{ forgejo_role_installer_become }}"
+      when:
+        - not forgejo_role_installer_release_is_archive
+
+    - name: Remove temporary directory
+      ansible.builtin.file:
+        path: "{{ forgejo_role_installer_tmp_directory }}/{{ forgejo_role_installer_binary_name }}"
+        state: absent

@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: "Install forgejo-cli"
+      ansible.builtin.include_role:
+        name: "sgaunet.forgejo_role_installer"
+        vars_from: "forgejo-cli.yml"

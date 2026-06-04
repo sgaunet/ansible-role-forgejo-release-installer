@@ -1,0 +1,13 @@
+---
+
+forgejo_role_installer_version: "0.5.0"
+forgejo_role_installer_url: "https://codeberg.org"
+forgejo_role_installer_os: "linux"
+forgejo_role_installer_arch: "x86_64"
+forgejo_role_installer_repository: "forgejo-contrib/forgejo-cli"
+forgejo_role_installer_release: "{{ forgejo_role_installer_url }}/{{ forgejo_role_installer_repository }}/releases/download/v{{ version_to_install }}/forgejo-cli-{{ forgejo_role_installer_arch }}-{{ forgejo_role_installer_os }}.tar.gz"
+forgejo_role_installer_release_is_archive: true
+forgejo_role_installer_binary_name: "fj"
+forgejo_role_installer_cmd_to_get_version: "fj version 2>/dev/null | sed -n '1s/^fj v//p'"
+forgejo_role_installer_tmp_directory: "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}"
+forgejo_role_installer_binary_path: "/usr/local/bin/{{ forgejo_role_installer_binary_name }}"

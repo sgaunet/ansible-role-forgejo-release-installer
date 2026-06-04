@@ -1,0 +1,20 @@
+---
+
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Include default vars
+      ansible.builtin.include_vars:
+        file: '{{ lookup("env", "MOLECULE_PROJECT_DIRECTORY") }}/vars/forgejo-cli.yml'
+
+    - name: Stat forgejo_role_installer {{ forgejo_role_installer_binary_name }}
+      ansible.builtin.stat:
+        path: "{{ forgejo_role_installer_binary_path }}"
+      register: forgejo_role_installer_present
+    - name: Check binary is present {{ forgejo_role_installer_binary_name }}
+      ansible.builtin.assert:
+        that:
+          - forgejo_role_installer_present.stat.exists
+        fail_msg: "forgejo_role_installer not setup"
+        success_msg: "forgejo_role_installer is setup"

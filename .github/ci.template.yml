@@ -1,0 +1,36 @@
+---
+name: CI-BINNAME
+'on':
+  schedule:
+    - cron: "RANDOM_MIN RANDOM_HOUR 15 * *"
+
+jobs:
+  molecule:
+    name: Molecule
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+          - ubuntu2404
+          # - debian12
+
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+
+      - name: Install Python deps
+        run: mise run install-deps
+
+      - name: Run Molecule tests.
+        run: mise exec -- molecule test -s BINNAME
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          MOLECULE_DISTRO: ${{ matrix.distro }}
