@@ -51,8 +51,8 @@ None.
         forgejo_role_installer_repository: "forgejo-contrib/forgejo-cli"
         forgejo_role_installer_release: "{{ forgejo_role_installer_url }}/{{ forgejo_role_installer_repository }}/releases/download/v{{ version_to_install }}/forgejo-cli-{{ forgejo_role_installer_arch }}-{{ forgejo_role_installer_os }}.tar.gz"
         forgejo_role_installer_release_is_archive: true
-        forgejo_role_installer_binary_name: "forgejo-cli"
-        forgejo_role_installer_cmd_to_get_version: "forgejo-cli --version | awk '{print $2}'"
+        forgejo_role_installer_binary_name: "fj"
+        forgejo_role_installer_cmd_to_get_version: "fj version 2>/dev/null | sed -n '1s/^fj v//p'"
 ```
 
 The role contains also variables to install miscellaneous tools. [See the list of available tools in this documentation.](docs/available_tools.md)
