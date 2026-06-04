@@ -1,0 +1,6 @@
+---
+- name: Install forgejo_role_installer
+  hosts: localhost
+  remote_user: root
+  roles:
+    - sgaunet.forgejo_role_installer

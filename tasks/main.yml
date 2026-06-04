@@ -1,0 +1,34 @@
+---
+
+- name: Ensure unzip is installed.
+  ansible.builtin.apt:
+    name: ["unzip"]
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian' and forgejo_role_installer_release_is_archive
+
+- name: Ensure unzip is installed.
+  ansible.builtin.package:
+    name: ["unzip", "bzip2"]
+    state: present
+  when: ansible_os_family == 'RedHat' and forgejo_role_installer_release_is_archive
+
+- name: Set forgejo_token
+  ansible.builtin.set_fact:
+    forgejo_token: "{{ lookup('env', 'FORGEJO_TOKEN') }}"
+    cacheable: true
+  changed_when: false
+  check_mode: false
+
+- name: Retrieve latest release information for forgejo repository {{ forgejo_role_installer_repository }}
+  ansible.builtin.uri:
+    url: "{{ forgejo_role_installer_url }}/api/v1/repos/{{ forgejo_role_installer_repository }}/releases/latest"
+    timeout: 60
+    headers: "{{ {'Authorization': 'token ' ~ forgejo_token} if forgejo_token else {} }}"
+    return_content: true
+  register: project_info
+  changed_when: false
+  check_mode: false
+
+- name: Proceed to setup
+  ansible.builtin.include_tasks: setup.yml

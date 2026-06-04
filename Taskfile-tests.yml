@@ -1,0 +1,18 @@
+---
+# https://taskfile.dev
+version: '3'
+tasks:
+  default:
+    desc: "List tasks"
+    cmds:
+      - task -a
+
+  all:
+    desc: "Test all"
+    cmds:
+      - task: test-forgejo-cli
+  test-forgejo-cli:
+    desc: "Run tests for forgejo-cli"
+    cmds:
+      - echo "Running tests for forgejo-cli"
+      - mise exec -- molecule test -s forgejo-cli
