@@ -10,7 +10,13 @@ tasks:
   all:
     desc: "Test all"
     cmds:
+      - task: test-fgj
       - task: test-forgejo-cli
+  test-fgj:
+    desc: "Run tests for fgj"
+    cmds:
+      - echo "Running tests for fgj"
+      - mise exec -- molecule test -s fgj
   test-forgejo-cli:
     desc: "Run tests for forgejo-cli"
     cmds:
