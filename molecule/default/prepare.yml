@@ -1,0 +1,30 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    # ansible.builtin.raw runs straight over the connection (TRANSFERS_FILES is False,
+    # no AnsiballZ payload, no remote tmpdir), so -- unlike wait_for_connection, which
+    # internally runs the ping module -- it cannot itself be eaten by the /tmp churn
+    # that happens a couple of seconds into the container's systemd boot.
+    - name: Wait for the instance systemd boot sequence to finish
+      # "degraded" is the normal end state in these containers (the image strips
+      # getty/udev units) and makes systemctl exit non-zero, so the return code is
+      # deliberately ignored. timeout(1) bounds the wait because raw does not
+      # support async.
+      ansible.builtin.raw: timeout 120 systemctl is-system-running --wait
+      register: systemd_boot_state
+      changed_when: false
+      failed_when: false
+
+    - name: Report the systemd state reached by the instance
+      ansible.builtin.debug:
+        msg: >-
+          systemd reported '{{ systemd_boot_state.stdout | default('') | trim }}'
+          (rc={{ systemd_boot_state.rc | default('n/a') }})
+
+    # First AnsiballZ round-trip of the run: if the gate above were ever insufficient,
+    # the failure is attributed here instead of resurfacing as a confusing
+    # "Gathering Facts" error in converge.
+    - name: Verify that module execution works on the instance
+      ansible.builtin.ping:

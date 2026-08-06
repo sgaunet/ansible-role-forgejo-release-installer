@@ -1,6 +1,7 @@
 ---
 name: CI-BINNAME
 'on':
+  workflow_dispatch:
   schedule:
     - cron: "RANDOM_MIN RANDOM_HOUR 15 * *"
 
