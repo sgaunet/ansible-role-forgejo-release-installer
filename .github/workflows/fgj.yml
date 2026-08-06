@@ -2,8 +2,7 @@
 name: CI-fgj
 'on':
   workflow_dispatch:
-  schedule:
-    - cron: "30 20 15 * *"
+  pull_request:
 
 jobs:
   molecule:

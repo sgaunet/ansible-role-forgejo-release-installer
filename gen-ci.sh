@@ -24,18 +24,4 @@ do
   else
     sed -i "s/BINNAME/${bin_name}/g" ".github/workflows/${bin_name}.yml"
   fi
-
-  RANDOM_DAY=$(echo $((1 + RANDOM % 5)))
-  RANDOM_HOUR=$(echo $((1 + RANDOM % 23)))
-  RANDOM_MIN=$(echo $((1 + RANDOM % 59)))
-
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/RANDOM_DAY/${RANDOM_DAY}/g" ".github/workflows/${bin_name}.yml"
-    sed -i '' "s/RANDOM_HOUR/${RANDOM_HOUR}/g" ".github/workflows/${bin_name}.yml"
-    sed -i '' "s/RANDOM_MIN/${RANDOM_MIN}/g" ".github/workflows/${bin_name}.yml"
-  else
-    sed -i "s/RANDOM_DAY/${RANDOM_DAY}/g" ".github/workflows/${bin_name}.yml"
-    sed -i "s/RANDOM_HOUR/${RANDOM_HOUR}/g" ".github/workflows/${bin_name}.yml"
-    sed -i "s/RANDOM_MIN/${RANDOM_MIN}/g" ".github/workflows/${bin_name}.yml"
-  fi
 done
