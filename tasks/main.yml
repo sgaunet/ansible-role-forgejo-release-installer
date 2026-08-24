@@ -15,8 +15,9 @@
 
 - name: Set forgejo_token
   ansible.builtin.set_fact:
-    forgejo_token: "{{ lookup('env', 'FORGEJO_TOKEN') }}"
+    forgejo_token: "{{ lookup('env', 'FORGEJO_TOKEN') | trim }}"
     cacheable: true
+  no_log: true
   changed_when: false
   check_mode: false
 
@@ -27,8 +28,59 @@
     headers: "{{ {'Authorization': 'token ' ~ forgejo_token} if forgejo_token else {} }}"
     return_content: true
   register: project_info
+  no_log: true
+  failed_when: false
   changed_when: false
   check_mode: false
+
+- name: Warn that FORGEJO_TOKEN was rejected
+  ansible.builtin.debug:
+    msg: >-
+      FORGEJO_TOKEN was rejected by {{ forgejo_role_installer_url }}
+      (HTTP {{ project_info.status | default('unknown') }}); retrying anonymously.
+      Unset FORGEJO_TOKEN, or issue a new token, to silence this warning.
+  when:
+    - forgejo_token | length > 0
+    - project_info.status | default(-1) in [401, 403]
+
+- name: Retry release information anonymously when the token was rejected
+  ansible.builtin.uri:
+    url: "{{ forgejo_role_installer_url }}/api/v1/repos/{{ forgejo_role_installer_repository }}/releases/latest"
+    timeout: 60
+    return_content: true
+  register: project_info_anon
+  failed_when: false
+  changed_when: false
+  check_mode: false
+  when:
+    - forgejo_token | length > 0
+    - project_info.status | default(-1) in [401, 403]
+
+- name: Use the anonymous result when the token was rejected
+  ansible.builtin.set_fact:
+    project_info: "{{ project_info_anon }}"
+  changed_when: false
+  check_mode: false
+  when:
+    - not project_info_anon.skipped | default(false)
+
+- name: Fail when the release information could not be retrieved
+  vars:
+    forgejo_role_installer_api_status: "{{ project_info.status | default(-1) | int }}"
+    forgejo_role_installer_api_hints:
+      "-1": "The Authorization header was malformed - check FORGEJO_TOKEN for stray whitespace."
+      "401": "FORGEJO_TOKEN was rejected and the anonymous retry also failed."
+      "403": "FORGEJO_TOKEN was rejected and the anonymous retry also failed."
+      "404": "Check forgejo_role_installer_repository and forgejo_role_installer_url."
+    forgejo_role_installer_api_msg: >-
+      Could not retrieve release information for
+      {{ forgejo_role_installer_repository }} from {{ forgejo_role_installer_url }}
+      (HTTP status {{ forgejo_role_installer_api_status }}).
+      {{ forgejo_role_installer_api_hints[forgejo_role_installer_api_status] | default('') }}
+  ansible.builtin.fail:
+    msg: "{{ forgejo_role_installer_api_msg | trim }}"
+  when:
+    - project_info.status | default(-1) != 200
 
 - name: Proceed to setup
   ansible.builtin.include_tasks: setup.yml
